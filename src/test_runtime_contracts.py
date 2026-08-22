@@ -1,6 +1,5 @@
 import tempfile
 import unittest
-from pathlib import Path
 
 from src.execution import CommandRunner
 from src.github_loop import PullRequestSnapshot, SafeGitHubLoop
@@ -22,6 +21,13 @@ class Provider:
         return {"ok": True, "usage": {"tokens": 10, "cost": 0.1}}
 
 
+class ExpensiveProvider:
+    def __init__(self): self.calls = []
+    def invoke(self, model, payload):
+        self.calls.append(model)
+        return {"ok": True, "usage": {"tokens": 1000, "cost": 9.0}}
+
+
 class GitHubFake:
     def __init__(self): self.snapshot = PullRequestSnapshot(1, "abc", "main", ["ci"])
     def get_pull_request(self, number): return self.snapshot
@@ -35,6 +41,13 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertTrue(ModelRouter(provider, ledger).run(ModelProfile("executor", "cheap", ["strong"]), {})["ok"])
         self.assertEqual(provider.calls, ["cheap", "strong"])
         self.assertEqual(ledger.tokens_used, 10)
+
+    def test_router_budget_failure_does_not_fallback(self):
+        ledger = BudgetLedger(100, 1.0); provider = ExpensiveProvider()
+        with self.assertRaises(RuntimeError):
+            ModelRouter(provider, ledger).run(ModelProfile("executor", "primary", ["fallback"], max_tokens=10, max_cost=0.5), {})
+        self.assertEqual(provider.calls, ["primary"])
+        self.assertEqual(ledger.tokens_used, 0)
 
     def test_budget_fails_closed(self):
         with self.assertRaises(RuntimeError): BudgetLedger(5, 1.0).charge(tokens=6, cost=0.0)
@@ -78,7 +91,7 @@ class RuntimeContractTests(unittest.TestCase):
         with self.assertRaises(RuntimeError): loop.merge(1, "abc", False, True)
         self.assertEqual(loop.merge(1, "abc", True, True), "merged")
 
-    def test_metrics_records_success_and_failure(self):
+    def test_metrics_records_success(self):
         metrics = Metrics()
         with metrics.span("ok"): pass
         self.assertTrue(metrics.timings[-1].success)
