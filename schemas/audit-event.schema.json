@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ZLoop Audit Event",
+  "type": "object",
+  "required": ["actor", "action", "target", "permission", "result", "created_at"],
+  "properties": {
+    "actor": {"type": "string", "minLength": 1},
+    "tenant_id": {"type": ["string", "null"]},
+    "action": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1},
+    "permission": {"enum": ["READ_ONLY", "LOCAL_MUTATION", "REMOTE_MUTATION", "HIGH_IMPACT"]},
+    "result": {"type": "string", "minLength": 1},
+    "idempotency_key": {"type": ["string", "null"]},
+    "created_at": {"type": "number"}
+  },
+  "additionalProperties": false
+}
