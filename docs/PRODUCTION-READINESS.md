@@ -7,10 +7,12 @@ ZLoop is considered **production-grade-ready** only when every gate below has im
 - bounded loop lifecycle and terminal states;
 - independent verifier/reviewer contracts;
 - durable SQLite checkpoint and idempotency ledger;
+- durable SQLite reference queue with leases, lease-expiry reclaim, retry, cancellation and deadlines;
 - checkpoint serialization/restoration helpers;
 - legal state-transition validation;
 - provider-neutral model routing contract and bounded fallback;
-- hard token/cost ledger and structured-output validation;
+- hard global and per-profile token/cost limits with fail-closed behavior;
+- structured-output validation;
 - deny-by-default permission gate;
 - verifier registry with fail-closed `INCONCLUSIVE` behavior;
 - evidence fingerprints for repeat/no-progress detection;
@@ -25,7 +27,7 @@ ZLoop is considered **production-grade-ready** only when every gate below has im
 ## Mandatory deployment gates before production mutation
 
 1. PostgreSQL durable state/idempotency implementation and migration tests.
-2. Durable queue, leases, crash-recovery integration tests, cancellation and deadlines.
+2. Production queue/worker backend with distributed leases and crash-recovery integration tests; SQLite is the local/reference backend only.
 3. OS/container sandbox with CPU, memory, process and network limits; the reference command runner is not a security sandbox.
 4. Capability-scoped real connector adapters with tenant/actor/action/target binding.
 5. External approval authority for `REMOTE_MUTATION` and `HIGH_IMPACT` operations.
