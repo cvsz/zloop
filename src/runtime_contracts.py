@@ -58,16 +58,25 @@ class ModelRouter:
         self.ledger = ledger
 
     def run(self, profile: ModelProfile, payload: Mapping[str, Any]) -> Mapping[str, Any]:
-        last_error: Exception | None = None
+        last_provider_error: Exception | None = None
         for model in (profile.primary, *profile.fallbacks):
             try:
                 result = self.provider.invoke(model, payload)
-                usage = result.get("usage", {})
-                self.ledger.charge(tokens=int(usage.get("tokens", 0)), cost=float(usage.get("cost", 0.0)))
-                return result
             except Exception as exc:
-                last_error = exc
-        raise RuntimeError("all model routes failed") from last_error
+                last_provider_error = exc
+                continue
+
+            usage = result.get("usage", {})
+            tokens = int(usage.get("tokens", 0))
+            cost = float(usage.get("cost", 0.0))
+            if tokens > profile.max_tokens:
+                raise RuntimeError("model profile token cap exceeded")
+            if cost > profile.max_cost:
+                raise RuntimeError("model profile cost cap exceeded")
+            self.ledger.charge(tokens=tokens, cost=cost)
+            return result
+
+        raise RuntimeError("all model routes failed") from last_provider_error
 
 
 def validate_structured_output(value: Mapping[str, Any], required: Iterable[str]) -> None:
