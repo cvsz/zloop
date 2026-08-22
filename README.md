@@ -1,78 +1,44 @@
-# ztemplate
+# ZLoop
 
-A production-ready, reusable GitHub repository template for starting new projects with consistent engineering, security, documentation, automation, and release practices.
+ZLoop is a vendor-neutral, production-oriented framework for building AI agent systems that improve their own work through bounded feedback loops.
 
-## Included
+## Core lifecycle
 
-- Issue and pull request templates
-- CODEOWNERS and repository contribution guidance
-- Security policy and support policy
-- CI workflow baseline
-- CodeQL security scanning
-- Dependency Review for pull requests
-- Dependabot configuration
-- Release workflow and release notes configuration
-- Conventional commit / PR guidance
-- EditorConfig, Git attributes, and Git ignore baseline
-- Community health files
-- Documentation structure
-- Changelog and roadmap templates
-- Implementation checklist
-- Architecture Decision Record (ADR) template
-- Environment example
-- Docker baseline
-- Makefile task entrypoints
+`DISCOVER → PLAN → EXECUTE → VERIFY → REVIEW → REPAIR → VERIFY → SHIP`
 
-## Start from this template
-
-1. Use this repository as a GitHub template repository.
-2. Create a new repository from the template.
-3. Replace placeholder project metadata.
-4. Review and customize `.github/CODEOWNERS`, `SECURITY.md`, CI matrices, and release settings.
-5. Add language/framework-specific workflows only when the project needs them.
-
-## Repository structure
-
-```text
-.github/
-  ISSUE_TEMPLATE/
-  workflows/
-  CODEOWNERS
-  CONTRIBUTING.md
-  PULL_REQUEST_TEMPLATE.md
-  dependabot.yml
-  release.yml
-  SUPPORT.md
-docs/
-  adr/
-  architecture.md
-  development.md
-  release.md
-.env.example
-.editorconfig
-.gitattributes
-.gitignore
-CHANGELOG.md
-CODE_OF_CONDUCT.md
-Dockerfile
-IMPLEMENTATION-CHECKLIST.md
-LICENSE
-Makefile
-README.md
-ROADMAP.md
-SECURITY.md
-```
+Every run is constrained by explicit budgets, stop conditions, permission boundaries, independent verification, persistent memory, and human handoff.
 
 ## Principles
 
-- Secure by default
-- Least privilege for GitHub Actions
-- Reproducible automation
-- Small, reviewable pull requests
-- Documentation as part of delivery
-- No weakening of security gates to make CI green
-- Explicit release and rollback practices
+- Closed loops first.
+- Maker/checker separation.
+- No unbounded retries.
+- Persist state outside model context.
+- Mutations require authorization and idempotency.
+- Verification decides completion, not the executor.
+- Cost/context are first-class resources.
+- Parallel agents use isolated worktrees.
+- Every material action is auditable.
 
-## License
+## Components
 
-MIT. See `LICENSE`.
+- Orchestrator, Discoverer, Planner, Executor, Verifier, Reviewer, Repairer
+- Memory Manager and Cost/Context Governor
+- reusable skills under `skills/`
+- JSON contracts under `schemas/`
+- policy-as-code documentation under `policies/`
+- provider-neutral Python reference runtime under `src/`
+- coding, research, content and fleet examples
+
+## Quick start
+
+```bash
+python -m unittest discover -s src -p 'test_*.py' -v
+python src/loop_engine.py
+```
+
+Replace the demo adapter with adapters for your preferred LLM/model gateway, GitHub/CI, issue tracker, database, staging API, or other connector.
+
+## Acceptance rule
+
+ZLoop may ship only when all mandatory acceptance criteria pass independent verification and required review has no blocking finding. `INCONCLUSIVE` is never treated as success.

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentResult",
+  "type": "object",
+  "required": ["status", "summary", "evidence", "next_action", "risks", "artifacts", "memory_updates"],
+  "properties": {
+    "status": {"enum": ["OK", "FAIL", "BLOCKED", "INCONCLUSIVE"]},
+    "summary": {"type": "string"},
+    "evidence": {"type": "array", "items": {"type": "string"}},
+    "next_action": {"type": ["string", "null"]},
+    "risks": {"type": "array", "items": {"type": "string"}},
+    "artifacts": {"type": "array", "items": {"type": "string"}},
+    "memory_updates": {"type": "array", "items": {"type": "string"}}
+  }
+}

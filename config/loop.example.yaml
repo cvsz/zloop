@@ -1,0 +1,33 @@
+loop:
+  mode: closed
+  max_iterations: 12
+  max_repairs: 4
+  max_consecutive_no_progress: 2
+  token_budget: 500000
+  cost_budget: 25.00
+  wall_clock_budget_seconds: 7200
+  require_independent_verifier: true
+  require_review: true
+  human_handoff_on_inconclusive: true
+
+permissions:
+  default: READ_ONLY
+  allow:
+    - LOCAL_MUTATION
+
+execution:
+  isolated_workspace: true
+  worktree_strategy: per_mutating_agent
+  parallelism: 3
+
+memory:
+  backend: jsonl
+  path: .loop/memory.jsonl
+  compact_after_stage: true
+
+verification:
+  fail_closed: true
+  required_gates:
+    - tests
+    - static_analysis
+    - security
