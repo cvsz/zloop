@@ -1,0 +1,29 @@
+loop:
+  mode: closed
+  max_iterations: 12
+  max_repairs: 4
+  max_consecutive_no_progress: 2
+  token_budget: 500000
+  cost_budget: 25.00
+  wall_clock_budget_seconds: 7200
+fleet:
+  max_depth: 2
+  max_fanout: 4
+  max_parallel_mutators: 2
+permissions:
+  default: READ_ONLY
+  require_approval: [REMOTE_MUTATION, HIGH_IMPACT]
+models:
+  discoverer: {primary: cheap, fallbacks: [strong]}
+  planner: {primary: cheap, fallbacks: [strong]}
+  executor: {primary: strong, fallbacks: []}
+  verifier: {primary: strong, fallbacks: []}
+persistence:
+  state_backend: postgresql
+  idempotency_backend: postgresql
+  artifacts: object-storage
+  audit: append-only
+observability:
+  traces: otlp
+  metrics: enabled
+  secret_redaction: true
