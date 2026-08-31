@@ -1,0 +1,11 @@
+include README.md
+include AGENTS.md
+include setup.py
+include src/*.py
+include src/schemas/*.json
+recursive-include config *.yaml
+recursive-include schemas *.json
+recursive-include agents *.md
+recursive-include policies *.md
+recursive-include examples *.md
+recursive-include skills */SKILL.md

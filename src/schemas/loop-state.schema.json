@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LoopState",
+  "type": "object",
+  "required": [
+    "loop_id",
+    "goal",
+    "state",
+    "iteration",
+    "budgets",
+    "acceptance_criteria",
+    "started_at"
+  ],
+  "properties": {
+    "loop_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "enum": [
+        "DISCOVER",
+        "PLAN",
+        "EXECUTE",
+        "VERIFY",
+        "REVIEW",
+        "REPAIR",
+        "SHIPPED",
+        "HANDOFF",
+        "BUDGET_EXHAUSTED",
+        "POLICY_VIOLATION",
+        "FAILED"
+      ]
+    },
+    "iteration": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "repair_attempts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "consecutive_no_progress": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "budgets": {
+      "type": "object",
+      "required": [
+        "max_iterations",
+        "max_repairs",
+        "max_consecutive_no_progress",
+        "token_budget",
+        "cost_budget",
+        "wall_clock_budget_seconds"
+      ],
+      "properties": {
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_repairs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_consecutive_no_progress": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "token_budget": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cost_budget": {
+          "type": "number",
+          "minimum": 0
+        },
+        "wall_clock_budget_seconds": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cost": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "started_at": {
+      "type": "number",
+      "description": "Unix timestamp when the loop started"
+    }
+  }
+}

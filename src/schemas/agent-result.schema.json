@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentResult",
+  "type": "object",
+  "required": [
+    "status",
+    "summary"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "OK",
+        "FAIL",
+        "BLOCKED",
+        "INCONCLUSIVE"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "next_action": {
+      "type": ["string", "null"]
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "memory_updates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "usage": {
+      "type": "object",
+      "required": ["tokens", "cost"],
+      "properties": {
+        "tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cost": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "progress": {
+      "type": "boolean",
+      "default": true
+    },
+    "verification_passed": {
+      "type": "boolean",
+      "default": false
+    },
+    "blocking_review_findings": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
