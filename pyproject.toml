@@ -42,7 +42,7 @@ docs = [
 ]
 
 [project.scripts]
-zloop = "loop_engine:main"
+zloop = "zloop_engine:main"
 
 [project.urls]
 Homepage = "https://github.com/zloop/zloop"

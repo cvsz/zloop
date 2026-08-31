@@ -102,6 +102,8 @@ class MemoryStore(Protocol):
 class JsonlMemoryStore:
     """Thread/process-safe JSONL memory store with file locking."""
 
+    VALID_STATUSES = {"OK", "FAIL", "BLOCKED", "INCONCLUSIVE"}
+
     def __init__(self, path: str = ".zloop/memory.jsonl", validate: bool = True) -> None:
         self.path = path
         self.validate = validate
@@ -121,7 +123,10 @@ class JsonlMemoryStore:
 
         line = json.dumps(record, ensure_ascii=False) + "\n"
 
-        lock_fd = open(self._lock_path, "w")
+        lock_dir = os.path.dirname(self._lock_path)
+        if lock_dir:
+            os.makedirs(lock_dir, exist_ok=True)
+        lock_fd = open(self._lock_path, "a")
         try:
             fcntl.flock(lock_fd, fcntl.LOCK_EX)
             with open(self.path, "a", encoding="utf-8") as f:
@@ -196,7 +201,9 @@ class LoopEngine:
         if s.state == State.VERIFY:
             return State.REVIEW if r.verification_passed else State.REPAIR
         if s.state == State.REVIEW:
-            return State.REPAIR if r.blocking_review_findings else State.SHIPPED
+            if r.status == "FAIL" or r.blocking_review_findings:
+                return State.REPAIR
+            return State.SHIPPED
         if s.state == State.REPAIR:
             return State.VERIFY
         return State.FAILED
@@ -222,6 +229,8 @@ class LoopEngine:
         """
         if not acceptance_criteria:
             raise ValueError("acceptance_criteria must not be empty")
+        if any(not c or not isinstance(c, str) for c in acceptance_criteria):
+            raise ValueError("acceptance_criteria must contain non-empty strings")
 
         s = LoopState(
             loop_id=str(uuid.uuid4()),
@@ -262,7 +271,53 @@ class LoopEngine:
             )
 
             stage_start = time.time()
-            r = self.adapter.run(role, s)
+            try:
+                r = self.adapter.run(role, s)
+            except Exception as e:
+                self._log(
+                    logging.ERROR,
+                    "Loop %s iteration %d: %s raised exception: %s",
+                    s.loop_id,
+                    s.iteration + 1,
+                    role,
+                    e,
+                )
+                s.state = State.FAILED
+                s.blockers.append(f"adapter_exception:{role}:{type(e).__name__}")
+                self.memory.save(s)
+                break
+
+            if r.status not in {"OK", "FAIL", "BLOCKED", "INCONCLUSIVE"}:
+                self._log(
+                    logging.ERROR,
+                    "Loop %s iteration %d: %s returned invalid status: %s",
+                    s.loop_id,
+                    s.iteration + 1,
+                    role,
+                    r.status,
+                )
+                s.state = State.FAILED
+                s.blockers.append(f"invalid_status:{role}:{r.status}")
+                self.memory.save(s)
+                break
+
+            if r.usage is None:
+                r.usage = Usage()
+            if r.summary is None:
+                r.summary = ""
+            if r.evidence is None:
+                r.evidence = []
+
+            if r.status == "FAIL" and r.verification_passed:
+                self._log(
+                    logging.WARNING,
+                    "Loop %s iteration %d: %s returned FAIL with verification_passed=True — treating as FAIL",
+                    s.loop_id,
+                    s.iteration + 1,
+                    role,
+                )
+                r.verification_passed = False
+
             stage_elapsed = time.time() - stage_start
 
             s.iteration += 1
@@ -382,7 +437,7 @@ def main() -> None:
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
-    engine = LoopEngine(DemoAdapter(), JsonlMemoryStore("/tmp/loop-demo-memory.jsonl"))
+    engine = LoopEngine(DemoAdapter(), JsonlMemoryStore())
     result = engine.run(
         goal="Demonstrate a bounded self-correcting engineering loop",
         acceptance_criteria=["verification passes", "review has no blocking findings"],

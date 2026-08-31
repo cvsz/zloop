@@ -27,7 +27,7 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run tests
-        run: python -m unittest src.test_loop_engine -v
+        run: python -m unittest src.test_zloop_engine -v
 
   lint:
     runs-on: ubuntu-latest

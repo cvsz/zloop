@@ -12,7 +12,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "zloop=loop_engine:main",
+            "zloop=zloop_engine:main",
         ],
     },
     include_package_data=True,

@@ -4,7 +4,7 @@
 Own the complete loop, enforce invariants, delegate stages, and decide whether to continue, ship, or hand off.
 
 ## Implementation
-The orchestrator is implemented by `LoopEngine` in `src/loop_engine.py`. It owns the state machine and enforces all invariants automatically.
+The orchestrator is implemented by `LoopEngine` in `src/zloop_engine.py`. It owns the state machine and enforces all invariants automatically.
 
 ## State machine
 ```

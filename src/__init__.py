@@ -1,6 +1,6 @@
 """zLoop Engineering Kit — bounded autonomous feedback loops."""
 
-from .loop_engine import (
+from .zloop_engine import (
     State,
     TERMINAL,
     Budgets,

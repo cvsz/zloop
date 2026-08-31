@@ -7,7 +7,7 @@ import threading
 import time
 import unittest
 
-from loop_engine import (
+from zloop_engine import (
     AgentResult,
     Budgets,
     DemoAdapter,
@@ -155,6 +155,109 @@ class WallClockExhaustAdapter:
             summary="Stage completed",
             progress=True,
             usage=Usage(tokens=10, cost=0.001),
+        )
+
+
+class ExceptionAdapter:
+    """Adapter that raises an exception."""
+
+    def run(self, role, state):
+        if role == "executor":
+            raise RuntimeError("Simulated adapter failure")
+        return AgentResult(
+            status="OK",
+            summary="Stage completed",
+            progress=True,
+            usage=Usage(tokens=100, cost=0.001),
+        )
+
+
+class InvalidStatusAdapter:
+    """Adapter that returns an invalid status."""
+
+    def run(self, role, state):
+        if role == "verifier":
+            return AgentResult(
+                status="INVALID",
+                summary="Bad status",
+                progress=True,
+            )
+        return AgentResult(
+            status="OK",
+            summary="Stage completed",
+            progress=True,
+        )
+
+
+class FailReviewAdapter:
+    """Adapter that returns FAIL during REVIEW once, then passes."""
+
+    def __init__(self):
+        self.review_count = 0
+
+    def run(self, role, state):
+        if role == "reviewer":
+            self.review_count += 1
+            if self.review_count == 1:
+                return AgentResult(
+                    status="FAIL",
+                    summary="Review failed",
+                    blocking_review_findings=True,
+                    progress=True,
+                    usage=Usage(tokens=100, cost=0.001),
+                )
+            return AgentResult(
+                status="OK",
+                summary="Review passed after repair",
+                blocking_review_findings=False,
+                progress=True,
+                usage=Usage(tokens=100, cost=0.001),
+            )
+        if role == "verifier":
+            return AgentResult(
+                status="OK",
+                summary="Verification passed",
+                verification_passed=True,
+                progress=True,
+                usage=Usage(tokens=100, cost=0.001),
+            )
+        return AgentResult(
+            status="OK",
+            summary="Stage completed",
+            progress=True,
+            usage=Usage(tokens=100, cost=0.001),
+        )
+
+
+class ContradictoryResultAdapter:
+    """Adapter that returns FAIL with verification_passed=True."""
+
+    def __init__(self):
+        self.verify_count = 0
+
+    def run(self, role, state):
+        if role == "verifier":
+            self.verify_count += 1
+            if self.verify_count == 1:
+                return AgentResult(
+                    status="FAIL",
+                    summary="Contradictory result",
+                    verification_passed=True,
+                    progress=True,
+                    usage=Usage(tokens=100, cost=0.001),
+                )
+            return AgentResult(
+                status="OK",
+                summary="Verification passed",
+                verification_passed=True,
+                progress=True,
+                usage=Usage(tokens=100, cost=0.001),
+            )
+        return AgentResult(
+            status="OK",
+            summary="Stage completed",
+            progress=True,
+            usage=Usage(tokens=100, cost=0.001),
         )
 
 
@@ -314,6 +417,65 @@ class LoopEngineTests(unittest.TestCase):
             self.assertEqual(result2.state, State.SHIPPED)
         finally:
             os.unlink(path)
+
+    def test_adapter_exception_fails_gracefully(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            path = f.name
+        try:
+            engine = LoopEngine(ExceptionAdapter(), JsonlMemoryStore(path))
+            result = engine.run("goal", ["criterion"])
+            self.assertEqual(result.state, State.FAILED)
+            self.assertTrue(any("adapter_exception" in b for b in result.blockers))
+        finally:
+            os.unlink(path)
+            if os.path.exists(path + ".lock"):
+                os.unlink(path + ".lock")
+
+    def test_invalid_status_fails_gracefully(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            path = f.name
+        try:
+            engine = LoopEngine(InvalidStatusAdapter(), JsonlMemoryStore(path))
+            result = engine.run("goal", ["criterion"])
+            self.assertEqual(result.state, State.FAILED)
+            self.assertTrue(any("invalid_status" in b for b in result.blockers))
+        finally:
+            os.unlink(path)
+            if os.path.exists(path + ".lock"):
+                os.unlink(path + ".lock")
+
+    def test_fail_review_triggers_repair(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            path = f.name
+        try:
+            budgets = Budgets(max_repairs=4, max_iterations=20, max_consecutive_no_progress=10)
+            engine = LoopEngine(FailReviewAdapter(), JsonlMemoryStore(path))
+            result = engine.run("goal", ["criterion"], budgets)
+            self.assertEqual(result.state, State.SHIPPED)
+            self.assertEqual(result.repair_attempts, 1)
+        finally:
+            os.unlink(path)
+            if os.path.exists(path + ".lock"):
+                os.unlink(path + ".lock")
+
+    def test_contradictory_result_handled(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            path = f.name
+        try:
+            engine = LoopEngine(ContradictoryResultAdapter(), JsonlMemoryStore(path))
+            result = engine.run("goal", ["criterion"])
+            self.assertEqual(result.state, State.SHIPPED)
+        finally:
+            os.unlink(path)
+            if os.path.exists(path + ".lock"):
+                os.unlink(path + ".lock")
+
+    def test_empty_criteria_strings_rejected(self):
+        engine = LoopEngine(DemoAdapter(), JsonlMemoryStore("/tmp/test-loop.jsonl"))
+        with self.assertRaises(ValueError):
+            engine.run("goal", ["", "valid"])
+        with self.assertRaises(ValueError):
+            engine.run("goal", [])
 
 
 class JsonlMemoryStoreTests(unittest.TestCase):

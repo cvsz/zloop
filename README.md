@@ -84,9 +84,9 @@ zloop/
 │   └── fleet-loop.md
 └── src/                         # Python source
     ├── __init__.py
-    ├── loop_engine.py           # Core engine
+    ├── zloop_engine.py          # Core engine
     ├── validation.py            # Schema validation
-    ├── test_loop_engine.py      # Unit tests
+    ├── test_zloop_engine.py     # Unit tests
     └── schemas/                 # Schemas copied for runtime
 ```
 
@@ -97,7 +97,7 @@ zloop/
 pip install -e .
 
 # Run tests
-python3 -m unittest src.test_loop_engine -v
+python3 -m unittest src.test_zloop_engine -v
 
 # Run demo
 zloop
