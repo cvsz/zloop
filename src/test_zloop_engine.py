@@ -7,6 +7,13 @@ import threading
 import time
 import unittest
 
+from jsonschema import ValidationError
+
+from validation import (
+    is_valid_agent_result,
+    is_valid_loop_state,
+    validate_loop_state,
+)
 from zloop_engine import (
     AgentResult,
     Budgets,
@@ -16,12 +23,6 @@ from zloop_engine import (
     LoopState,
     State,
     Usage,
-)
-from validation import (
-    is_valid_agent_result,
-    is_valid_loop_state,
-    validate_agent_result,
-    validate_loop_state,
 )
 
 
@@ -492,7 +493,7 @@ class JsonlMemoryStoreTests(unittest.TestCase):
             )
             store.save(state)
 
-            with open(path, "r") as f:
+            with open(path) as f:
                 lines = f.readlines()
             self.assertEqual(len(lines), 1)
             record = json.loads(lines[0])
@@ -532,7 +533,7 @@ class JsonlMemoryStoreTests(unittest.TestCase):
 
             self.assertEqual(len(errors), 0, f"Concurrent write errors: {errors}")
 
-            with open(path, "r") as f:
+            with open(path) as f:
                 lines = f.readlines()
             self.assertEqual(len(lines), 50)
         finally:
@@ -579,7 +580,7 @@ class ValidationTests(unittest.TestCase):
     def test_invalid_loop_state_missing_required(self):
         state = {"loop_id": "abc"}
         self.assertFalse(is_valid_loop_state(state))
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             validate_loop_state(state)
 
     def test_valid_agent_result(self):

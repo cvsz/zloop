@@ -10,7 +10,7 @@ import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Protocol, Optional
+from typing import Any, Protocol
 
 try:
     from .validation import is_valid_loop_state
@@ -63,11 +63,11 @@ class Usage:
 class AgentResult:
     status: str
     summary: str
-    evidence: List[str] = field(default_factory=list)
-    next_action: Optional[str] = None
-    risks: List[str] = field(default_factory=list)
-    artifacts: List[str] = field(default_factory=list)
-    memory_updates: List[str] = field(default_factory=list)
+    evidence: list[str] = field(default_factory=list)
+    next_action: str | None = None
+    risks: list[str] = field(default_factory=list)
+    artifacts: list[str] = field(default_factory=list)
+    memory_updates: list[str] = field(default_factory=list)
     usage: Usage = field(default_factory=Usage)
     progress: bool = True
     verification_passed: bool = False
@@ -78,16 +78,16 @@ class AgentResult:
 class LoopState:
     loop_id: str
     goal: str
-    acceptance_criteria: List[str]
+    acceptance_criteria: list[str]
     budgets: Budgets
     state: State = State.DISCOVER
     iteration: int = 0
     repair_attempts: int = 0
     consecutive_no_progress: int = 0
     usage: Usage = field(default_factory=Usage)
-    evidence: List[str] = field(default_factory=list)
-    blockers: List[str] = field(default_factory=list)
-    history: List[Dict[str, Any]] = field(default_factory=list)
+    evidence: list[str] = field(default_factory=list)
+    blockers: list[str] = field(default_factory=list)
+    history: list[dict[str, Any]] = field(default_factory=list)
     started_at: float = field(default_factory=time.time)
 
 
@@ -126,16 +126,15 @@ class JsonlMemoryStore:
         lock_dir = os.path.dirname(self._lock_path)
         if lock_dir:
             os.makedirs(lock_dir, exist_ok=True)
-        lock_fd = open(self._lock_path, "a")
-        try:
-            fcntl.flock(lock_fd, fcntl.LOCK_EX)
-            with open(self.path, "a", encoding="utf-8") as f:
-                f.write(line)
-                f.flush()
-                os.fsync(f.fileno())
-        finally:
-            fcntl.flock(lock_fd, fcntl.LOCK_UN)
-            lock_fd.close()
+        with open(self._lock_path, "a") as lock_fd:
+            try:
+                fcntl.flock(lock_fd, fcntl.LOCK_EX)
+                with open(self.path, "a", encoding="utf-8") as f:
+                    f.write(line)
+                    f.flush()
+                    os.fsync(f.fileno())
+            finally:
+                fcntl.flock(lock_fd, fcntl.LOCK_UN)
 
 
 class LoopEngine:
@@ -168,7 +167,7 @@ class LoopEngine:
         if self.enable_logging:
             logger.log(level, msg, *args)
 
-    def _budget_reason(self, s: LoopState) -> Optional[str]:
+    def _budget_reason(self, s: LoopState) -> str | None:
         elapsed = time.time() - s.started_at
         if s.iteration >= s.budgets.max_iterations:
             return "max_iterations"
@@ -211,8 +210,8 @@ class LoopEngine:
     def run(
         self,
         goal: str,
-        acceptance_criteria: List[str],
-        budgets: Optional[Budgets] = None,
+        acceptance_criteria: list[str],
+        budgets: Budgets | None = None,
     ) -> LoopState:
         """Execute a bounded feedback loop.
 
