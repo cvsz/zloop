@@ -12,10 +12,7 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any, Protocol
 
-try:
-    from .validation import is_valid_loop_state
-except ImportError:
-    from validation import is_valid_loop_state
+from validation import is_valid_loop_state
 
 logger = logging.getLogger("zloop")
 

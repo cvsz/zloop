@@ -17,8 +17,9 @@ def _load_schema(name: str) -> dict[str, Any]:
     if name not in _schemas:
         path = os.path.join(SCHEMA_DIR, f"{name}.schema.json")
         with open(path, encoding="utf-8") as f:
-            _schemas[name] = json.load(f)
-    return _schemas[name]
+            loaded: dict[str, Any] = json.load(f)
+            _schemas[name] = loaded
+    return _schemas[name]  # type: ignore[no-any-return]
 
 
 def validate_loop_state(data: dict[str, Any]) -> None:
